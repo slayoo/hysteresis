@@ -12,8 +12,6 @@
 template <typename odeset_t>
 class solver_t
 {
-  double t;
-
   static auto nvec2bltz(const N_Vector &nvec)
   {
     return blitz::Array<double, 1>(
@@ -27,6 +25,9 @@ class solver_t
   {
     static int ode(double t, N_Vector Y, N_Vector dY_dt, void *params)
     {
+#if !defined(N_DEBUG)
+      nvec2bltz(dY_dt) = blitz::signalling_NaN(44.);
+#endif
       auto ret = static_cast<params_t*>(params)->odeset(t, nvec2bltz(Y), nvec2bltz(dY_dt)); 
       return 
         ret == odeset_t::ret_t::OK  ? 0 : //  0: ok
@@ -43,6 +44,8 @@ class solver_t
   } params;
 
   public:
+
+  double t;
 
   solver_t(odeset_t &&odeset)
     : params({odeset})
