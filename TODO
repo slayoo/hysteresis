@@ -1,1 +1,8 @@
 - travis
+- sliders
+- plot regression test (gnuplot-iostream + accuracy)
+- r1/r2/r3/... plot
+- input/output
+- act/deact
+- fluctuations
+- CVODES

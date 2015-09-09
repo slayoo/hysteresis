@@ -25,10 +25,10 @@ class solver_t
   {
     static int ode(double t, N_Vector Y, N_Vector dY_dt, void *params)
     {
-#if !defined(N_DEBUG)
+#if !defined(NDEBUG)
       nvec2bltz(dY_dt) = blitz::signalling_NaN(44.);
 #endif
-      auto ret = static_cast<params_t*>(params)->odeset(t, nvec2bltz(Y), nvec2bltz(dY_dt)); 
+      auto ret = static_cast<params_t*>(params)->odeset.step(t, nvec2bltz(Y), nvec2bltz(dY_dt)); 
       return 
         ret == odeset_t::ret_t::OK  ? 0 : //  0: ok
         ret == odeset_t::ret_t::adj ? 1 : //  1: adjust-timestep
@@ -40,18 +40,20 @@ class solver_t
   N_Vector Y;
 
   struct params_t {
-    odeset_t odeset;
+    odeset_t &odeset;
   } params;
 
   public:
 
-  double t;
+  double t = 0.;
+  decltype(nvec2bltz(Y)) state;
 
-  solver_t(odeset_t &&odeset)
+  solver_t(odeset_t &odeset)
     : params({odeset})
   {
     Y = N_VNew_Serial(odeset_t::n_eqns);
-    nvec2bltz(Y) = odeset.Y0;
+    state.reference(nvec2bltz(Y));
+    odeset.init(state);
 
     cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
 
@@ -61,7 +63,7 @@ class solver_t
     if (CV_SUCCESS != CVodeSetUserData(cvode_mem, &params))
       throw std::runtime_error("CVodeSetUserData() failed.");
 
-    if (CV_SUCCESS != CVodeInit(cvode_mem, &(system_t::ode), /* t0 = */ 0., Y))
+    if (CV_SUCCESS != CVodeInit(cvode_mem, &(system_t::ode), t, Y))
       throw std::runtime_error("CVodeInit() failed.");
 
     if (CV_SUCCESS != CVodeSStolerances(cvode_mem, odeset_t::reltol, odeset_t::abstol))

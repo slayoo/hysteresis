@@ -1,3 +1,4 @@
 libsundials-serial-dev
 cmake
 libblitz-dev
+libgdl0-dev
