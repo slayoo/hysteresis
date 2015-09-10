@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <limits>
 
-#include "solver.hpp"
-#include "odeset.hpp"
+#include "src/solver.hpp"
+#include "src/odeset.hpp"
 
 int main()
 {

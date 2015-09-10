@@ -5,4 +5,5 @@
 - input/output
 - act/deact
 - fluctuations
+- spline interp?
 - CVODES

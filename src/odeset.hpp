@@ -18,7 +18,6 @@ using namespace libcloudphxx::common;
 auto p0 = 1e5 * si::pascals;
 auto T0 = 3e2 * si::kelvins;
 auto r0 = 2.2e-2 * si::dimensionless();
-auto w  = 3e0 * si::metres_per_second;
 auto N_stp  = 1e2 * 1e6 / si::cubic_metres;
 auto kpa = .5 * si::dimensionless();
 auto rd3 = pow(1e-7, 3) * si::cubic_metres;
