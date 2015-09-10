@@ -7,3 +7,7 @@
 - fluctuations
 - spline interp?
 - CVODES
+- shorten boost::units:: ...(anon namespace?)
+- smax vs f/amp plot
+- zintrp as template param
+- porządek z include / CMake / recompilation

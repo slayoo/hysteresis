@@ -8,6 +8,9 @@
 
 int main()
 {
+  namespace bu = boost::units;
+  namespace si = bu::si;
+
   Gnuplot gp;
 
   gp << "set term svg dynamic enhanced mouse standalone fsize 18\n";
@@ -19,10 +22,10 @@ int main()
   
 
   using arg_t = std::tuple<
-    quantity<si::length>,    // z_hlf
-    quantity<si::time>,      // t_hlf
-    quantity<si::frequency>, // freq
-    quantity<si::length>,    // ampl
+    bu::quantity<si::length>,    // z_hlf
+    bu::quantity<si::time>,      // t_hlf
+    bu::quantity<si::frequency>, // freq
+    bu::quantity<si::length>,    // ampl
     std::string              // gnuplot lt
   >;
 

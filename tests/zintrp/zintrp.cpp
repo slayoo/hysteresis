@@ -6,6 +6,8 @@
 
 int main()
 {
+  namespace si = boost::units::si;
+
   const double xmax = .05;
   const int npts = 64;
 
@@ -28,13 +30,13 @@ int main()
      .1 * si::metres   // ampl
   ));
 
-  decltype(zintrp.data) dense;
+  std::remove_const<decltype(zintrp.data)>::type dense;
   for (auto &arr : dense) arr.resize(npts);
 
   for (int i=0; i < npts; ++i)
   {
     dense[0](i) = double(i)/(npts-1) * xmax;
-    dense[1](i) = zintrp.z(dense[0](i) * si::seconds) / si::metres;
+    dense[1](i) = zintrp.z(dense[0](i));
   }
 
   gp << "plot "

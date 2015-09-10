@@ -10,8 +10,9 @@
 #include <libcloudph++/common/kappa_koehler.hpp>
 #include <libcloudph++/common/mean_free_path.hpp>
 #include <libcloudph++/common/transition_regime.hpp>
-
 using namespace libcloudphxx::common;
+
+#include "zintrp.hpp"
 
 // <TODO>
 // parameters
@@ -30,12 +31,11 @@ class odeset_t
   quantity<si::temperature> th0;
   quantity<si::mass_density> rhod0;
 
+  const zintrp_t &zintrp;
+
   public:
 
-  static constexpr double 
-    t_scale = 10, // [sec] - timescale used to initialise solver
-    reltol = 1e-5,
-    abstol = 0;
+  static constexpr double t_scale = 10; // [sec] - timescale used to initialise solver
 
   enum { n_eqns = 3 };
   enum class ret_t { OK, KO, adj };
@@ -85,7 +85,6 @@ class odeset_t
   // initial condition
   void init(blitz::Array<double, 1> Y)
   {
-
     auto RH0 = p0 * r0 / (r0 + moist_air::eps<double>()) / const_cp::p_vs(T0);
 
     Y(ix_th) = theta_dry::std2dry(th0, r0) / si::kelvins;
@@ -94,7 +93,8 @@ class odeset_t
   }
 
   // ctor
-  odeset_t()
+  odeset_t(const zintrp_t &zintrp)
+    : zintrp(zintrp)
   {
     th0 = T0 * pow(theta_std::p_1000<double>() / p0, moist_air::R_d<double>() / moist_air::c_pd<double>());
     rhod0 = theta_std::rhod(p0, th0, r0);
@@ -103,11 +103,10 @@ class odeset_t
   // for diagnostics
   private:
 
-  quantity<si::mass_density> _rhod(const quantity<si::time> &t)
+  quantity<si::mass_density> _rhod(const quantity<si::time> &t) const
   {
-    auto z = t * w;
     return theta_std::rhod(
-      hydrostatic::p(z, th0, r0, 0. * si::metres, p0),
+      hydrostatic::p(zintrp.z(t / si::seconds) * si::metres, th0, r0, 0. * si::metres, p0),
       th0,
       r0
     );
@@ -117,7 +116,7 @@ class odeset_t
     const quantity<si::temperature> &T,
     const quantity<si::dimensionless> &rv,
     const quantity<si::mass_density> &rhod
-  ) {
+  ) const {
     auto p_v = rhod * rv * moist_air::R_v<double>() * T;
     return p_v / const_cp::p_vs(T);
   }
@@ -127,7 +126,7 @@ class odeset_t
   double RH(
     const blitz::Array<double, 1> &Y,
     const double &t
-  ) {
+  ) const {
     auto rhod = _rhod(t * si::seconds);
     return _RH(
       theta_dry::T(Y(ix_th) * si::kelvins, rhod),
