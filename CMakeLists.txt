@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.0)
 project(hysteresis CXX)
 enable_testing() 
+
+find_package(Boost QUIET COMPONENTS system iostreams) 
+# TODO: what if not found
+find_package(GSL QUIET)
+# TODO: what if not found
+
 add_subdirectory(tests)
 
 
