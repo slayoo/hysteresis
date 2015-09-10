@@ -14,24 +14,28 @@ using namespace libcloudphxx::common;
 
 #include "zintrp.hpp"
 
-// <TODO>
-// parameters
-auto p0 = 1e5 * si::pascals;
-auto T0 = 3e2 * si::kelvins;
-auto r0 = 2.2e-2 * si::dimensionless();
-auto w  = 3e0 * si::metres_per_second;
-auto N_stp  = 1e2 * 1e6 / si::cubic_metres;
-auto kpa = .5 * si::dimensionless();
-auto rd3 = pow(1e-7, 3) * si::cubic_metres;
-// </TODO>
-
 class odeset_t
 {
+  public:
+
+  struct params_t
+  {
+    boost::units::quantity<si::pressure> p0;
+    boost::units::quantity<si::temperature> T0;
+    boost::units::quantity<si::dimensionless> r0;
+    decltype(1./si::cubic_metres) N_stp;
+    boost::units::quantity<si::dimensionless> kpa;
+    boost::units::quantity<si::volume> rd3;
+  };
+
+  private:
+
   // set in ctor, used in init() and step()
   quantity<si::temperature> th0;
   quantity<si::mass_density> rhod0;
 
   const zintrp_t &zintrp;
+  const params_t &params;
 
   public:
 
@@ -65,12 +69,12 @@ class odeset_t
       moist_air::K_0<double>() * transition_regime::beta(mean_free_path::lambda_K(T, p) / rw),
       rhod * rv, T, p,
       _RH(T, rv, rhod),
-      kappa_koehler::a_w(rw*rw*rw, rd3, kpa),
+      kappa_koehler::a_w(rw*rw*rw, params.rd3, params.kpa),
       kelvin::klvntrm(rw, T)
     ) / rw / (si::metres / si::second);
     
     dY_dt(ix_rv) = - 4./3. * pi<double>() * moist_air::rho_w<double>() 
-      * N_stp * (rhod0 / earth::rho_stp<double>()) / rhod  //
+      * params.N_stp * (rhod0 / earth::rho_stp<double>()) / rhod  //
       * 3. * rw * rw  // 
       * (dY_dt(ix_rw) * si::metres_per_second)
       * (si::seconds);
@@ -85,19 +89,19 @@ class odeset_t
   // initial condition
   void init(blitz::Array<double, 1> Y)
   {
-    auto RH0 = p0 * r0 / (r0 + moist_air::eps<double>()) / const_cp::p_vs(T0);
+    auto RH0 = params.p0 * params.r0 / (params.r0 + moist_air::eps<double>()) / const_cp::p_vs(params.T0);
 
-    Y(ix_th) = theta_dry::std2dry(th0, r0) / si::kelvins;
-    Y(ix_rv) = r0;
-    Y(ix_rw) = cbrt(kappa_koehler::rw3_eq(rd3, kpa, RH0, T0) / si::cubic_metres);
+    Y(ix_th) = theta_dry::std2dry(th0, params.r0) / si::kelvins;
+    Y(ix_rv) = params.r0;
+    Y(ix_rw) = cbrt(kappa_koehler::rw3_eq(params.rd3, params.kpa, RH0, params.T0) / si::cubic_metres);
   }
 
   // ctor
-  odeset_t(const zintrp_t &zintrp)
-    : zintrp(zintrp)
+  odeset_t(const zintrp_t &zintrp, const params_t &params)
+    : zintrp(zintrp), params(params)
   {
-    th0 = T0 * pow(theta_std::p_1000<double>() / p0, moist_air::R_d<double>() / moist_air::c_pd<double>());
-    rhod0 = theta_std::rhod(p0, th0, r0);
+    th0 = params.T0 * pow(theta_std::p_1000<double>() / params.p0, moist_air::R_d<double>() / moist_air::c_pd<double>());
+    rhod0 = theta_std::rhod(params.p0, th0, params.r0);
   }
 
   // for diagnostics
@@ -106,9 +110,9 @@ class odeset_t
   quantity<si::mass_density> _rhod(const quantity<si::time> &t) const
   {
     return theta_std::rhod(
-      hydrostatic::p(zintrp.z(t / si::seconds) * si::metres, th0, r0, 0. * si::metres, p0),
+      hydrostatic::p(zintrp.z(t / si::seconds) * si::metres, th0, params.r0, 0. * si::metres, params.p0),
       th0,
-      r0
+      params.r0
     );
   }
 

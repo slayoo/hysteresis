@@ -48,10 +48,10 @@ int main()
   }
   gp << "\n";
   for (auto &arg : cases)
-    gp.send(invfft(
-      std::get<0>(arg),
-      std::get<1>(arg),
-      std::get<2>(arg),
-      std::get<3>(arg)
-    ));
+    gp.send(invfft_t()(invfft_t::params_t({
+      .z_hlf = std::get<0>(arg),
+      .t_hlf = std::get<1>(arg),
+      .freq  = std::get<2>(arg),
+      .ampl  = std::get<3>(arg)
+    })));
 }

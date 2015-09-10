@@ -23,12 +23,12 @@ int main()
   gp << "set xrange [0:" << xmax << "]\n";
   gp << "set yrange [0:.01]\n";
   
-  zintrp_t zintrp(invfft(
-    1.  * si::metres,  // z_hlf 
-    1.  * si::seconds, // t_hlf
-    1.  * si::hertz,   // freq
-     .1 * si::metres   // ampl
-  ));
+  zintrp_t zintrp(invfft_t()(invfft_t::params_t({
+    .z_hlf = 1.  * si::metres,  // z_hlf 
+    .t_hlf = 1.  * si::seconds, // t_hlf
+    .freq  = 1.  * si::hertz,   // freq
+    .ampl  = .1 * si::metres   // ampl
+  })));
 
   std::remove_const<decltype(zintrp.data)>::type dense;
   for (auto &arr : dense) arr.resize(npts);
