@@ -1,13 +1,17 @@
+- plots:
+  - min_dt (activ/deact) vs. reltol (for different r powers)
+  - dt vs. time
+  - min_dt (activ/deact) vs. freq
+  - smax vs f/amp
 - travis
+- MAC/HAC
 - sliders
 - plot regression test (gnuplot-iostream + accuracy)
-- r1/r2/r3/... plot
 - input/output
 - act/deact
 - fluctuations
-- spline interp?
 - CVODES
 - shorten boost::units:: ...(anon namespace?)
-- smax vs f/amp plot
 - zintrp as template param
 - porządek z include / CMake / recompilation
+- common gnuplot code (mouse!)
