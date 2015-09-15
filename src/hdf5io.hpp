@@ -13,8 +13,8 @@ class hdf5io_t
   public:
 
   enum { 
-    ix_t, ix_z, ix_RH, 
-    n_vars = 3 
+    ix_t, ix_z, ix_RH, ix_rw, ix_T, ix_kelvin, ix_raoult,
+    n_vars = 7
   };
 
   private:
@@ -70,7 +70,11 @@ class hdf5io_t
     for (const auto &ixnm : std::map<int, const char*>({
       {ix_z , "z" },
       {ix_t , "t" },
-      {ix_RH, "RH"}
+      {ix_RH, "RH"},
+      {ix_rw, "rw"},
+      {ix_T,  "T"},
+      {ix_kelvin, "kelvin"},
+      {ix_raoult, "raoult"}
     })) {
       dsets[ixnm.first] = file.createDataSet(
         ixnm.second, 

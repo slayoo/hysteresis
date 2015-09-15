@@ -127,15 +127,21 @@ class odeset_t
 
   public:
 
-  double RH(
+  struct diag_t
+  {
+    double T, RH, kelvin, raoult;
+  };
+
+  diag_t diag(
     const blitz::Array<double, 1> &Y,
     const double &t
   ) const {
     auto rhod = _rhod(t * si::seconds);
-    return _RH(
-      theta_dry::T(Y(ix_th) * si::kelvins, rhod),
-      Y(ix_rv) * si::dimensionless(),
-      rhod
-    );
+    diag_t ret;
+    ret.T = theta_dry::T(Y(ix_th) * si::kelvins, rhod) / si::kelvins;
+    ret.kelvin = kelvin::klvntrm(Y(ix_rw) * si::metres, ret.T * si::kelvins); // TODO: Jacobian
+    ret.raoult = kappa_koehler::a_w(pow(Y(ix_rw),3) * si::cubic_metres, params.rd3, params.kpa); // TODO: Jacobian
+    ret.RH = _RH(ret.T * si::kelvins, Y(ix_rv) * si::dimensionless(), rhod);
+    return ret;
   }
 };

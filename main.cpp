@@ -52,7 +52,12 @@ int main(int argc, char **argv)
     std::array<double, hdf5io_t::n_vars> rec;
     rec[hdf5io_t::ix_t ] = solver.t;
     rec[hdf5io_t::ix_z ] = zintrp.z(solver.t);
-    rec[hdf5io_t::ix_RH] = odeset.RH(solver.state, solver.t);
+    auto diag = odeset.diag(solver.state, solver.t);
+    rec[hdf5io_t::ix_RH] = diag.RH;
+    rec[hdf5io_t::ix_T] = diag.T;
+    rec[hdf5io_t::ix_kelvin] = diag.kelvin;
+    rec[hdf5io_t::ix_raoult] = diag.raoult;
+    rec[hdf5io_t::ix_rw] = solver.state(odeset_t::ix_rw);
     hdf5io.putrec(rec);
   }
 }

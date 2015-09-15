@@ -1,0 +1,16 @@
+netcdf rhloop 
+{
+  variables:
+    :reltol = 1e-5;     // [1]
+    :abstol = 0.;       // [1]
+    :z_hlf  = 150.;     // [m]
+    :t_hlf  = 150.;     // [s]
+    :freq   = 0.;       // [Hz]
+    :ampl   = 0.;       // [m]
+    :p0     = 1e5;      // [Pa]
+    :T0     = 3e2;      // [K]
+    :r0     = 2.22e-2;  // [kg/kg]
+    :N_stp  = 500e6;    // [m-3]
+    :kpa    = .75;      // [1]
+    :rd     = .075e-6;  // [m]
+}
