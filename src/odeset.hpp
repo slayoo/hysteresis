@@ -13,7 +13,9 @@
 using namespace libcloudphxx::common;
 
 #include "zintrp.hpp"
+#include "rmanip.hpp"
 
+template <typename xi_t = xi_id<>>
 class odeset_t
 {
   public:
@@ -37,13 +39,14 @@ class odeset_t
   const zintrp_t &zintrp;
   const params_t &params;
 
+  enum { ix_rv, ix_th, ix_xi };
+
   public:
 
   static constexpr double t_scale = 10; // [sec] - timescale used to initialise solver
 
   enum { n_eqns = 3 };
   enum class ret_t { OK, KO, adj };
-  enum { ix_rv, ix_th, ix_rw };
 
   ret_t step(
     const double &t, 
@@ -55,7 +58,9 @@ class odeset_t
     // current state with units
     auto rv = Y(ix_rv) * si::dimensionless();
     auto th = Y(ix_th) * si::kelvins;
-    auto rw = Y(ix_rw) * si::metres;
+    auto rw1 = xi_t::rw1_of_xi(Y(ix_xi)) * si::metres;
+    auto rw2 = xi_t::rw2_of_xi(Y(ix_xi)) * si::square_metres;
+    auto rw3 = xi_t::rw3_of_xi(Y(ix_xi)) * si::cubic_metres;
 
     // derived quantities
     auto rhod = _rhod(t * si::seconds);
@@ -64,19 +69,19 @@ class odeset_t
     auto p_v = rhod * rv * moist_air::R_v<double>() * T;
 
     // values of the derivatives
-    dY_dt(ix_rw) = maxwell_mason::rdrdt(
-      moist_air::D_0<double>() * transition_regime::beta(mean_free_path::lambda_D(T)    / rw), 
-      moist_air::K_0<double>() * transition_regime::beta(mean_free_path::lambda_K(T, p) / rw),
+    dY_dt(ix_xi) = xi_t::dxidrw(rw1/si::metres) / rw1 * maxwell_mason::rdrdt(
+      moist_air::D_0<double>() * transition_regime::beta(mean_free_path::lambda_D(T)    / rw1), 
+      moist_air::K_0<double>() * transition_regime::beta(mean_free_path::lambda_K(T, p) / rw1),
       rhod * rv, T, p,
       _RH(T, rv, rhod),
-      kappa_koehler::a_w(rw*rw*rw, params.rd3, params.kpa),
-      kelvin::klvntrm(rw, T)
-    ) / rw / (si::metres / si::second);
+      kappa_koehler::a_w(rw3, params.rd3, params.kpa),
+      kelvin::klvntrm(rw1, T)
+    ) / (si::metres / si::second);
     
     dY_dt(ix_rv) = - 4./3. * pi<double>() * moist_air::rho_w<double>() 
       * params.N_stp * (rhod0 / earth::rho_stp<double>()) / rhod  //
-      * 3. * rw * rw  // 
-      * (dY_dt(ix_rw) * si::metres_per_second)
+      * 3. * rw2  // Jacobian
+      * (dY_dt(ix_xi)/xi_t::dxidrw(rw1/si::metres) * si::metres_per_second)
       * (si::seconds);
 
     dY_dt(ix_th) = theta_dry::d_th_d_rv(T, th) 
@@ -93,7 +98,7 @@ class odeset_t
 
     Y(ix_th) = theta_dry::std2dry(th0, params.r0) / si::kelvins;
     Y(ix_rv) = params.r0;
-    Y(ix_rw) = cbrt(kappa_koehler::rw3_eq(params.rd3, params.kpa, RH0, params.T0) / si::cubic_metres);
+    Y(ix_xi) = xi_t::xi_of_rw3(kappa_koehler::rw3_eq(params.rd3, params.kpa, RH0, params.T0) / si::cubic_metres);
   }
 
   // ctor
@@ -129,7 +134,7 @@ class odeset_t
 
   struct diag_t
   {
-    double T, RH, kelvin, raoult;
+    double T, RH, kelvin, raoult, rw;
   };
 
   diag_t diag(
@@ -139,9 +144,10 @@ class odeset_t
     auto rhod = _rhod(t * si::seconds);
     diag_t ret;
     ret.T = theta_dry::T(Y(ix_th) * si::kelvins, rhod) / si::kelvins;
-    ret.kelvin = kelvin::klvntrm(Y(ix_rw) * si::metres, ret.T * si::kelvins); // TODO: Jacobian
-    ret.raoult = kappa_koehler::a_w(pow(Y(ix_rw),3) * si::cubic_metres, params.rd3, params.kpa); // TODO: Jacobian
+    ret.kelvin = kelvin::klvntrm(xi_t::rw1_of_xi(Y(ix_xi)) * si::metres, ret.T * si::kelvins); 
+    ret.raoult = kappa_koehler::a_w(xi_t::rw3_of_xi(Y(ix_xi)) * si::cubic_metres, params.rd3, params.kpa); 
     ret.RH = _RH(ret.T * si::kelvins, Y(ix_rv) * si::dimensionless(), rhod);
+    ret.rw = xi_t::rw1_of_xi(Y(ix_xi));
     return ret;
   }
 };

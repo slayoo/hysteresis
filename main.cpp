@@ -7,13 +7,10 @@
 #include "src/zintrp.hpp"
 #include "src/hdf5io.hpp"
 
-int main(int argc, char **argv)
+template <typename xi_t>
+void run(hdf5io_t &hdf5io)
 {
-  if (argc != 2)
-    throw std::runtime_error("expecting one argument - HDF5 filename");
-
-  hdf5io_t hdf5io(argv[1]);
-
+  using odeset_t = odeset_t<xi_t>;
   struct params_t : 
     solver_t<odeset_t>::params_t,
     invfft_t::params_t,
@@ -57,7 +54,26 @@ int main(int argc, char **argv)
     rec[hdf5io_t::ix_T] = diag.T;
     rec[hdf5io_t::ix_kelvin] = diag.kelvin;
     rec[hdf5io_t::ix_raoult] = diag.raoult;
-    rec[hdf5io_t::ix_rw] = solver.state(odeset_t::ix_rw);
+    rec[hdf5io_t::ix_rw] = diag.rw;
     hdf5io.putrec(rec);
   }
+}
+
+int main(int argc, char **argv)
+{
+  if (!(argc == 2 || argc == 3))
+    throw std::runtime_error("expecting one or two arguments - HDF5 filename & xi variable choice (id,p2,p3,ln)");
+
+  hdf5io_t hdf5io(argv[1]);
+  
+  if (argc == 2 || std::string(argv[2]) == "id")
+    run<xi_id<>>(hdf5io);
+  else if (std::string(argv[2]) == "p2")
+    run<xi_p2<>>(hdf5io);
+  else if (std::string(argv[2]) == "p3")
+    run<xi_p3<>>(hdf5io);
+  else if (std::string(argv[2]) == "ln")
+    run<xi_ln<>>(hdf5io);
+  else
+    throw std::runtime_error("unknown xi choice (second argument)");
 }
