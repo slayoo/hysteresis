@@ -11,11 +11,25 @@ class zintrp_t
 
   public:
 
+  struct params_t
+  {
+    int n_cycl;
+  };
+
+  private:
+
+  const params_t &params;
+
+  public:
+
   const std::array<blitz::Array<double, 1>,2> data;
 
   // ctor
-  zintrp_t(std::array<blitz::Array<double, 1>,2> &&data)
-    : data(std::move(data))
+  zintrp_t(
+    std::array<blitz::Array<double, 1>,2> &&data,
+    const params_t &params
+  )
+    : data(std::move(data)), params(params)
   {
     gslerr_init();
 
@@ -33,14 +47,14 @@ class zintrp_t
     const double &t
   ) const
   {
-    if (t > data[0](data[0].size()-1)) return 0.;
+    if (t > params.n_cycl * data[0](data[0].size()-1)) return 0.;
 
     double z;
     auto status = gsl_interp_eval_e(
       intp, 
       data[0].data(), 
       data[1].data(), 
-      t,
+      fmod(t, data[0](data[0].size()-1)),
       accl, 
       &z
     );

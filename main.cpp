@@ -12,11 +12,15 @@ void run(hdf5io_t &hdf5io)
 {
   using odeset_t = odeset_t<xi_t>;
   struct params_t : 
+    zintrp_t::params_t,
     solver_t<odeset_t>::params_t,
     invfft_t::params_t,
     odeset_t::params_t
   {
     params_t(const hdf5io_t &io) :
+      zintrp_t::params_t({
+	.n_cycl = (int)io.getpar("n_cycl"), 
+      }),
       solver_t<odeset_t>::params_t({
 	.reltol = io.getpar("reltol"), 
 	.abstol = io.getpar("abstol")
@@ -30,19 +34,21 @@ void run(hdf5io_t &hdf5io)
       odeset_t::params_t({
 	.p0     = io.getpar("p0") * si::pascals,
 	.T0     = io.getpar("T0") * si::kelvins,
-	.r0     = io.getpar("r0") * si::dimensionless(),
+	.RH0     = io.getpar("RH0") * si::dimensionless(),
 	.N_stp  = io.getpar("N_stp") / si::cubic_metres,
 	.kpa    = io.getpar("kpa") * si::dimensionless(),
-	.rd3    = pow(io.getpar("rd"), 3) * si::cubic_metres
+	.rd3    = pow(io.getpar("rd"), 3) * si::cubic_metres,
+        .kelvin = (bool)io.getpar("kelvin"),
+        .raoult = (bool)io.getpar("raoult")
       })
     {}
   } params(hdf5io);
 
-  auto zintrp = zintrp_t(invfft_t()(params));
+  auto zintrp = zintrp_t(invfft_t()(params), params);
   auto odeset = odeset_t(zintrp, params);
   auto solver = solver_t<odeset_t>(odeset, params);
 
-  while (solver.t < 2. * params.t_hlf / si::seconds)
+  while (solver.t < params.n_cycl * 2 * (params.t_hlf / si::seconds))
   {
     solver.step();
 

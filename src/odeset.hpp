@@ -15,7 +15,7 @@ using namespace libcloudphxx::common;
 #include "zintrp.hpp"
 #include "rmanip.hpp"
 
-template <typename xi_t = xi_id<>>
+template <typename xi_t>
 class odeset_t
 {
   public:
@@ -24,16 +24,18 @@ class odeset_t
   {
     boost::units::quantity<si::pressure> p0;
     boost::units::quantity<si::temperature> T0;
-    boost::units::quantity<si::dimensionless> r0;
+    boost::units::quantity<si::dimensionless> RH0;
     decltype(1./si::cubic_metres) N_stp;
     boost::units::quantity<si::dimensionless> kpa;
     boost::units::quantity<si::volume> rd3;
+    bool kelvin, raoult;
   };
 
   private:
 
   // set in ctor, used in init() and step()
   quantity<si::temperature> th0;
+  quantity<si::dimensionless> r0;
   quantity<si::mass_density> rhod0;
 
   const zintrp_t &zintrp;
@@ -74,8 +76,8 @@ class odeset_t
       moist_air::K_0<double>() * transition_regime::beta(mean_free_path::lambda_K(T, p) / rw1),
       rhod * rv, T, p,
       _RH(T, rv, rhod),
-      kappa_koehler::a_w(rw3, params.rd3, params.kpa),
-      kelvin::klvntrm(rw1, T)
+      params.raoult ? kappa_koehler::a_w(rw3, params.rd3, params.kpa) : 1. * si::dimensionless(),
+      params.kelvin ? kelvin::klvntrm(rw1, T) : 1. * si::dimensionless()
     ) / (si::metres / si::second);
     
     dY_dt(ix_rv) = - 4./3. * pi<double>() * moist_air::rho_w<double>() 
@@ -94,11 +96,13 @@ class odeset_t
   // initial condition
   void init(blitz::Array<double, 1> Y)
   {
-    auto RH0 = params.p0 * params.r0 / (params.r0 + moist_air::eps<double>()) / const_cp::p_vs(params.T0);
+    r0 = moist_air::eps<double>() / (params.p0 / const_cp::p_vs(params.T0) / params.RH0 - 1.);
+    Y(ix_th) = theta_dry::std2dry(th0, r0) / si::kelvins;
+    Y(ix_rv) = r0;
 
-    Y(ix_th) = theta_dry::std2dry(th0, params.r0) / si::kelvins;
-    Y(ix_rv) = params.r0;
-    Y(ix_xi) = xi_t::xi_of_rw3(kappa_koehler::rw3_eq(params.rd3, params.kpa, RH0, params.T0) / si::cubic_metres);
+    // TODO: check RH ~1  with no Keohler curve...
+
+    Y(ix_xi) = xi_t::xi_of_rw3(kappa_koehler::rw3_eq(params.rd3, params.kpa, params.RH0, params.T0) / si::cubic_metres);
   }
 
   // ctor
@@ -106,7 +110,7 @@ class odeset_t
     : zintrp(zintrp), params(params)
   {
     th0 = params.T0 * pow(theta_std::p_1000<double>() / params.p0, moist_air::R_d<double>() / moist_air::c_pd<double>());
-    rhod0 = theta_std::rhod(params.p0, th0, params.r0);
+    rhod0 = theta_std::rhod(params.p0, th0, r0);
   }
 
   // for diagnostics
@@ -115,9 +119,9 @@ class odeset_t
   quantity<si::mass_density> _rhod(const quantity<si::time> &t) const
   {
     return theta_std::rhod(
-      hydrostatic::p(zintrp.z(t / si::seconds) * si::metres, th0, params.r0, 0. * si::metres, params.p0),
+      hydrostatic::p(zintrp.z(t / si::seconds) * si::metres, th0, r0, 0. * si::metres, params.p0),
       th0,
-      params.r0
+      r0
     );
   }
 

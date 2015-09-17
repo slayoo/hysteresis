@@ -1,12 +1,19 @@
+- 2x2 / 3x3 w/N -> reltol/dt
+- finish nokhlr
+- N-dep example plots
+
+- bidisperse:
+  - r_1,2(z)
+  - Delta r
+  - 
+
+- n_cycles plot
 - send Shin-ichiro the equation system
 - get rid of the 1.05 by interpolating at t_hlf
 - progress bar
-- strzałki na wykresie!
 - RHMax w rw init???
 - plots:
   - with/without Keohler curve
-  - min_dt (activ/deact) vs. reltol (for different r powers)
-  - dt vs. time
   - min_dt (activ/deact) vs. freq
   - smax vs f/amp
 - multiple cycles?

@@ -3,14 +3,17 @@ netcdf rhloop
   variables:
     :reltol = 1e-5;     // [1]
     :abstol = 0.;       // [1]
+    :n_cycl = 1.;       // [1] (casted to int)
+    :kelvin = 1.;       // [1] (casted to bool)
+    :raoult = 1.;       // [1] (casted to bool)
     :z_hlf  = 150.;     // [m]
-    :t_hlf  = 150.;     // [s]
+    :t_hlf  = 150.;      // [s]
     :freq   = 0.;       // [Hz]
     :ampl   = 0.;       // [m]
     :p0     = 1e5;      // [Pa]
     :T0     = 3e2;      // [K]
-    :r0     = 2.22e-2;  // [kg/kg]
+    :RH0    = .98;      // [Pa/Pa]
     :N_stp  = 500e6;    // [m-3]
-    :kpa    = .75;      // [1]
-    :rd     = .075e-6;  // [m]
+    :kpa    = .2;       // [1]
+    :rd     = .1e-6;  // [m]
 }
